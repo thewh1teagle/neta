@@ -17,6 +17,32 @@ LANG = 'he-IL' # English
 PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
 keyword_paths = ['hineta_win.ppn' if Platform.WINDOWS else 'hineta_linux.ppn']
 
+def choose_microphone_device():
+    mic_list = sr.Microphone.list_microphone_names()
+    if len(mic_list) == 0:
+        print("No microphone devices found.")
+        return None
+    
+    for i, mic_name in enumerate(mic_list):
+        print(f"Device {i + 1}: {mic_name}")
+    
+    device_number = input("Enter the device number for your microphone (or Enter for default device): ")
+    
+    if device_number.lower() == 'q':
+        return None
+    
+    try:
+        device_number = int(device_number)
+        if device_number < 1 or device_number > len(mic_list):
+            print("Invalid device number. Please try again.")
+            return None
+        
+        return device_number
+    except ValueError:
+        if device_number != '':
+            print("Invalid input. Please enter a valid device number.")
+        return None
+
 def ogg2wav(ogg: bytes):
     ogg_buf = io.BytesIO(ogg)
     ogg_buf.name = 'file.ogg'
@@ -49,7 +75,8 @@ def main():
     )
     r = sr.Recognizer()
     keywords = load_keywords()
-    with sr.Microphone(None, porcupine.sample_rate, porcupine.frame_length) as source:
+    device_index = choose_microphone_device()
+    with sr.Microphone(device_index, porcupine.sample_rate, porcupine.frame_length) as source:
         r.adjust_for_ambient_noise(source)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
         while True:
             frame = source.stream.read(porcupine.frame_length)
