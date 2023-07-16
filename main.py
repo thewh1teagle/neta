@@ -15,7 +15,7 @@ load_dotenv()  # take environment variables from .env.
 
 LANG = 'he-IL' # English
 PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
-keyword_paths = ['hineta.ppn']
+keyword_paths = ['hineta_win.ppn' if Platform.WINDOWS else 'hineta_linux.ppn']
 
 def ogg2wav(ogg: bytes):
     ogg_buf = io.BytesIO(ogg)
