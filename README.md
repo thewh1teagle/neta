@@ -1,4 +1,4 @@
-<img src="https://github.com/thewh1teagle/neta/assets/61390950/db4c146d-1d0f-406b-b604-6c176e569e55" width="320px" height="150px" />   
+<img src="https://github.com/thewh1teagle/neta/assets/61390950/063297bd-82b6-4c04-8835-71db3d7b7135" width="270px" height="150px" />   
 
 # Neta  
 bard based assistant
