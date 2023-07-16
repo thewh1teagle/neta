@@ -1,17 +1,19 @@
 import os
 import io
 import struct
-import winsound
 from datetime import datetime
 import speech_recognition as sr
 import pvporcupine
 from bardapi import Bard
 import soundfile as sf
 from dotenv import load_dotenv
+from platform_detector import Platform
+import subprocess
+import shutil
 
 load_dotenv()  # take environment variables from .env.
 
-LANG = 'en-US' # English
+LANG = 'he-IL' # English
 PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
 keyword_paths = ['hineta.ppn']
 
@@ -63,9 +65,17 @@ def main():
                 answer = bard.get_answer(prompt)
                 
                 audio = bard.speech(answer['content'], lang=LANG)
-                wav = ogg2wav(audio)
                 print('Speaking...')
-                winsound.PlaySound(wav, winsound.SND_MEMORY)
+                if Platform.WINDOWS:
+                    import winsound
+                    wav = ogg2wav(audio)
+                    winsound.PlaySound(wav, winsound.SND_MEMORY)
+                else:
+                    if not shutil.which('ffplay'):
+                        raise FileNotFoundError('ffplay must installed to play audio')
+                    proc = subprocess.Popen(['ffplay', '-', '-autoexit', '-nodisp'], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    proc.stdin.write(audio)
+                    proc.wait()
                 print('Continue...')
 
 if __name__ == '__main__':
