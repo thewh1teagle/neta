@@ -1,0 +1,4 @@
+bardapi
+soundfile
+SpeechRecognition
+python-dotenv
