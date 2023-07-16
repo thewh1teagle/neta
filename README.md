@@ -1,5 +1,8 @@
-# Neta
+<img src="https://github.com/thewh1teagle/neta/assets/61390950/db4c146d-1d0f-406b-b604-6c176e569e55" width="320px" height="150px" />   
+
+# Neta  
 bard based assistant
+
 
 # Setup
 1. Clone the repo
