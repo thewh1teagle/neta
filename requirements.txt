@@ -2,3 +2,4 @@ bardapi
 soundfile
 SpeechRecognition
 python-dotenv
+pvporcupine
