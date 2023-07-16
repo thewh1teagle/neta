@@ -3,3 +3,4 @@ soundfile
 SpeechRecognition
 python-dotenv
 pvporcupine
+PyAudio
