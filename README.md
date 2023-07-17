@@ -19,9 +19,5 @@ pip3 install -r requirements.txt
 python3 main.py
 ```
 
-- Linux Users  
-  on Linux, we need to install few additional packages  
-  ```sudo apt-get install -y ffplay libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```
-
 # Usage
-Say `hi neta` and then ask her anything!
+Say `hi neta` and then ask her anything

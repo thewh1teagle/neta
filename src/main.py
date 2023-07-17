@@ -8,14 +8,18 @@ from bardapi import Bard
 import soundfile as sf
 from dotenv import load_dotenv
 from platform_detector import Platform
-import subprocess
-import shutil
+from wav_player import WavPlayer
+from pathlib import Path
 
 load_dotenv()  # take environment variables from .env.
 
 LANG = 'he-IL' # English
 PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
-keyword_paths = ['hineta_win.ppn' if Platform.WINDOWS else 'hineta_linux.ppn']
+ASSETS_PATH = Path(__file__).parent / '../assets'
+keyword_paths = [ASSETS_PATH / 'hineta_win.ppn' if Platform.WINDOWS else ASSETS_PATH / 'hineta_linux.ppn']
+player = WavPlayer()
+
+
 
 def choose_microphone_device():
     mic_list = sr.Microphone.list_microphone_names()
@@ -83,27 +87,20 @@ def main():
             pcm = struct.unpack_from("h" * porcupine.frame_length, frame)
             result = porcupine.process(pcm)
             if result != -1:
+                player.stop()
                 print('[%s] Detected %s' % (str(datetime.now()), keywords[result]))
                 print("Say something!")
                 audio = r.listen(source)
                 prompt = r.recognize_google(audio, language=LANG)
+                if prompt == 'תפסיקי':
+                    continue
                 
                 print('Asking neta...')
                 answer = bard.get_answer(prompt)
                 
                 audio = bard.speech(answer['content'], lang=LANG)
                 print('Speaking...')
-                if Platform.WINDOWS:
-                    import winsound
-                    wav = ogg2wav(audio)
-                    winsound.PlaySound(wav, winsound.SND_MEMORY)
-                else:
-                    if not shutil.which('ffplay'):
-                        raise FileNotFoundError('ffplay must installed to play audio')
-                    proc = subprocess.Popen(['ffplay', '-', '-autoexit', '-nodisp'], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    proc.stdin.write(audio)
-                    proc.wait()
-                print('Continue...')
-
+                wav = ogg2wav(audio)
+                player.play(wav)
 if __name__ == '__main__':
     main()
