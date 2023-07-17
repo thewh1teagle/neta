@@ -17,7 +17,6 @@ LANG = 'he-IL' # English
 PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
 ASSETS_PATH = Path(__file__).parent / '../assets'
 keyword_paths = [ASSETS_PATH / 'hineta_win.ppn' if Platform.WINDOWS else ASSETS_PATH / 'hineta_linux.ppn']
-player = WavPlayer()
 
 
 
@@ -59,8 +58,8 @@ def ogg2wav(ogg: bytes):
 
 def load_keywords():
     keywords = list()
-    for x in keyword_paths:
-        keyword_phrase_part = os.path.basename(x).replace('.ppn', '').split('_')
+    for k in keyword_paths:
+        keyword_phrase_part = k.name.replace('.ppn', '').split('_')
         if len(keyword_phrase_part) > 6:
             keywords.append(' '.join(keyword_phrase_part[0:-6]))
         else:
@@ -69,6 +68,7 @@ def load_keywords():
 
 def main():
     bard = Bard(token_from_browser=True)
+    player = WavPlayer()
     
     porcupine = pvporcupine.create(
             access_key=PORCUPINE_KEY,
@@ -91,7 +91,10 @@ def main():
                 print('[%s] Detected %s' % (str(datetime.now()), keywords[result]))
                 print("Say something!")
                 audio = r.listen(source)
-                prompt = r.recognize_google(audio, language=LANG)
+                try:
+                    prompt = r.recognize_google(audio, language=LANG)
+                except:
+                    continue
                 if prompt == 'תפסיקי':
                     continue
                 
