@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from platform_detector import Platform
 from wav_player import WavPlayer
 from pathlib import Path
+import signal
 
 load_dotenv()  # take environment variables from .env.
 
@@ -18,7 +19,18 @@ PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
 ASSETS_PATH = Path(__file__).parent / '../assets'
 keyword_paths = [ASSETS_PATH / 'hineta_win.ppn' if Platform.WINDOWS else ASSETS_PATH / 'hineta_linux.ppn']
 
+class GracefulExiter():
 
+    def __init__(self):
+        self.state = False
+        signal.signal(signal.SIGINT, self.change_state)
+
+    def change_state(self, signum, frame):
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        self.state = True
+
+    def exit(self):
+        return self.state
 
 def choose_microphone_device():
     mic_list = sr.Microphone.list_microphone_names()
@@ -67,6 +79,7 @@ def load_keywords():
     return keywords
 
 def main():
+    exiter = GracefulExiter()
     bard = Bard(token_from_browser=True)
     player = WavPlayer()
     
@@ -83,6 +96,9 @@ def main():
     with sr.Microphone(device_index, porcupine.sample_rate, porcupine.frame_length) as source:
         r.adjust_for_ambient_noise(source)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
         while True:
+            if exiter.exit():
+                player.stop()
+                break
             frame = source.stream.read(porcupine.frame_length)
             pcm = struct.unpack_from("h" * porcupine.frame_length, frame)
             result = porcupine.process(pcm)
@@ -105,5 +121,6 @@ def main():
                 print('Speaking...')
                 wav = ogg2wav(audio)
                 player.play(wav)
+
 if __name__ == '__main__':
     main()
