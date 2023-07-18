@@ -4,3 +4,4 @@ SpeechRecognition
 python-dotenv
 pvporcupine
 PyAudio
+numpy
