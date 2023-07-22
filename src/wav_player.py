@@ -4,13 +4,15 @@ from io import BytesIO
 import threading
 
 class WavPlayer:
-    def __init__(self):
+    def __init__(self, output_device_index: int):
         self.chunk_size = 1024
         self.is_playing = False
         self.thread = None
-        self.p = pyaudio.PyAudio()
+        self.output_device_index = output_device_index
         self.stream = None
         self.wav_data = None
+        self.p = pyaudio.PyAudio()
+        
 
     def play(self, data: bytes):
         self.stop()
@@ -31,7 +33,8 @@ class WavPlayer:
             format=self.p.get_format_from_width(wave_file.getsampwidth()),
             channels=wave_file.getnchannels(),
             rate=wave_file.getframerate(),
-            output=True
+            output=True,
+            output_device_index=self.output_device_index
         )
 
         while self.is_playing:

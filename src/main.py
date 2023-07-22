@@ -13,6 +13,7 @@ from pathlib import Path
 import signal
 import argparse
 import json
+import pyaudio
 
 load_dotenv()  # take environment variables from .env.
 
@@ -33,13 +34,17 @@ class GracefulExiter():
         return self.state
 
 def print_mics():
-    mic_list = sr.Microphone.list_microphone_names()
-    if len(mic_list) == 0:
-        print("No microphone devices found.")
-        return None
-    
-    for i, mic_name in enumerate(mic_list):
-        print(f"Device {i + 1}: {mic_name}")
+    p = pyaudio.PyAudio()
+    info = p.get_host_api_info_by_index(0)
+    count = int(info.get('deviceCount', 0))
+    if count == 0:
+        print('No microfones found')
+    for i in range(count):
+        device = p.get_device_info_by_host_api_device_index(0, i)
+        if device.get('maxInputChannels') <= 1 and device.get('maxOutputChannels') >= 0:
+            continue
+        name = device.get('name', '')
+        print(f'Device {i}: {name}')
 
 def print_langs():
     with open(ASSETS_PATH / 'languages.json', 'r') as f:
@@ -47,6 +52,18 @@ def print_langs():
     for key, value in langs.items():
         print(f'{key}: --lang {value}')
 
+def print_speakers():
+    p = pyaudio.PyAudio()
+    info = p.get_host_api_info_by_index(0)
+    count = int(info.get('deviceCount', 0))
+    if count == 0:
+        print('No speakers found')
+    for i in range(count):
+        device = p.get_device_info_by_host_api_device_index(0, i)
+        if device.get('maxOutputChannels', 0) <= 0:
+            continue
+        name = device.get('name', '')
+        print(f'Device {i}: {name}')
 
 def ogg2wav(ogg: bytes):
     ogg_buf = io.BytesIO(ogg)
@@ -75,9 +92,11 @@ def main():
     )
     parser.add_argument('--lang', default='iw-IL', required=False, type=str, help='Language to use')
     parser.add_argument('--mic', default=1, required=False, type=int, help='Mic device index')
+    parser.add_argument('--speaker', default=None, required=False, type=int, help='Speaker device index')
     parser.add_argument('--stop-word', required=False, default='תפסיקי', type=str, help='Stop word, when you say it, neta will stop talk')
     parser.add_argument('--list-mics', required=False, action='store_true', help='List available microfones')
     parser.add_argument('--list-langs', required=False, action='store_true', help='List available microfones')
+    parser.add_argument('--list-speakers', required=False, action='store_true', help='List available microfones')
     args = parser.parse_args()
 
     if args.list_mics:
@@ -86,10 +105,13 @@ def main():
     if args.list_langs:
         print_langs()
         exit(0)
+    if args.list_speakers:
+        print_speakers()
+        exit(0)
 
     exiter = GracefulExiter()
     bard = Bard(token_from_browser=True)
-    player = WavPlayer()
+    player = WavPlayer(output_device_index=args.speaker)
     
     porcupine = pvporcupine.create(
             access_key=PORCUPINE_KEY,
