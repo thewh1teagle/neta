@@ -11,16 +11,16 @@ from platform_detector import Platform
 from wav_player import WavPlayer
 from pathlib import Path
 import signal
+import argparse
+import json
 
 load_dotenv()  # take environment variables from .env.
 
-LANG = 'he-IL' # English
 PORCUPINE_KEY = os.getenv('PORCUPINE_KEY')
 ASSETS_PATH = Path(__file__).parent / '../assets'
 keyword_paths = [ASSETS_PATH / 'hineta_win.ppn' if Platform.WINDOWS else ASSETS_PATH / 'hineta_linux.ppn']
 
 class GracefulExiter():
-
     def __init__(self):
         self.state = False
         signal.signal(signal.SIGINT, self.change_state)
@@ -32,7 +32,7 @@ class GracefulExiter():
     def exit(self):
         return self.state
 
-def choose_microphone_device():
+def print_mics():
     mic_list = sr.Microphone.list_microphone_names()
     if len(mic_list) == 0:
         print("No microphone devices found.")
@@ -40,23 +40,13 @@ def choose_microphone_device():
     
     for i, mic_name in enumerate(mic_list):
         print(f"Device {i + 1}: {mic_name}")
-    
-    device_number = input("Enter the device number for your microphone (or Enter for default device): ")
-    
-    if device_number.lower() == 'q':
-        return None
-    
-    try:
-        device_number = int(device_number)
-        if device_number < 1 or device_number > len(mic_list):
-            print("Invalid device number. Please try again.")
-            return None
-        
-        return device_number
-    except ValueError:
-        if device_number != '':
-            print("Invalid input. Please enter a valid device number.")
-        return None
+
+def print_langs():
+    with open(ASSETS_PATH / 'languages.json', 'r') as f:
+        langs = json.load(f)
+    for key, value in langs.items():
+        print(f'{key}: --lang {value}')
+
 
 def ogg2wav(ogg: bytes):
     ogg_buf = io.BytesIO(ogg)
@@ -79,6 +69,24 @@ def load_keywords():
     return keywords
 
 def main():
+    parser = argparse.ArgumentParser(
+        prog='Neta',
+        description='Bard based assistant',
+    )
+    parser.add_argument('--lang', default='iw-IL', required=False, type=str, help='Language to use')
+    parser.add_argument('--mic', default=1, required=False, type=int, help='Mic device index')
+    parser.add_argument('--stop-word', required=False, default='תפסיקי', type=str, help='Stop word, when you say it, neta will stop talk')
+    parser.add_argument('--list-mics', required=False, action='store_true', help='List available microfones')
+    parser.add_argument('--list-langs', required=False, action='store_true', help='List available microfones')
+    args = parser.parse_args()
+
+    if args.list_mics:
+        print_mics()
+        exit(0)
+    if args.list_langs:
+        print_langs()
+        exit(0)
+
     exiter = GracefulExiter()
     bard = Bard(token_from_browser=True)
     player = WavPlayer()
@@ -92,8 +100,7 @@ def main():
     )
     r = sr.Recognizer()
     keywords = load_keywords()
-    device_index = choose_microphone_device()
-    with sr.Microphone(device_index, porcupine.sample_rate, porcupine.frame_length) as source:
+    with sr.Microphone(args.mic, porcupine.sample_rate, porcupine.frame_length) as source:
         r.adjust_for_ambient_noise(source)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
         while True:
             if exiter.exit():
@@ -108,16 +115,16 @@ def main():
                 print("Say something!")
                 audio = r.listen(source)
                 try:
-                    prompt = r.recognize_google(audio, language=LANG)
+                    prompt = r.recognize_google(audio, language=args.lang)
                 except:
                     continue
-                if prompt == 'תפסיקי':
+                if prompt == args.stop_word:
                     continue
                 
                 print('Asking neta...')
                 answer = bard.get_answer(prompt)
                 
-                audio = bard.speech(answer['content'], lang=LANG)
+                audio = bard.speech(answer['content'], lang=args.lang)
                 print('Speaking...')
                 wav = ogg2wav(audio)
                 player.play(wav)
