@@ -13,7 +13,7 @@ git clone https://github.com/thewh1teagle/neta
 ```
 pip3 install -r requirements.txt
 ```
-3. Register https://console.picovoice.ai/?referrer=docs and copy access token to `.env` file (see `.env.example`)
+3. Register https://console.picovoice.ai and copy access token to `.env` file (see `.env.example`)
 
 4. Sign in to bard using your web browser at https://bard.google.com/
 
